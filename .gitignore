@@ -4,3 +4,4 @@
 __pycache__/
 my_spotify_data/
 *.db
+*.log
