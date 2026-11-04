@@ -1,9 +1,10 @@
 from db import init_db, save_many_plays
+from dotenv import load_dotenv
 import glob
 import json
 
 json_streamingfiles = glob.glob("my_spotify_data/Streaming_History_Audio_*.json")
-
+load_dotenv() # reads file (no module dotenv -> .venv\Scripts\activate)
 
 def history_converter():
     skipped_episodes = 0
@@ -44,10 +45,9 @@ def history_converter():
             converted_plays.append(plays)
 
     saved_tracks = save_many_plays(converted_plays)
-        
+
     print(f"Saved {saved_tracks} new tracks, skipped {skipped_episodes} episodes.")
 
 
- 
 
 history_converter()

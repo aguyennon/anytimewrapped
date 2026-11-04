@@ -50,8 +50,9 @@ def track_converter():
     counter = 0
     items = results["items"]
     for item in items:
+        clean_played_at = item["played_at"][:19] + item["played_at"][23:] # to remove miliseconds section to match 'ts' in export
         play = {
-            "played_at": item["played_at"],
+            "played_at": clean_played_at, # used to give -> 2026-10-25T18:24:00.735Z (needs to match export format -> 2026-10-22T22:22:51Z)
             "track_id": item["track"]["id"],
             "track_name": item["track"]["name"],
             # songs *can* have more than one artist, grab the first one (most likely the main one)
@@ -59,6 +60,7 @@ def track_converter():
             "album_name": item["track"]["album"]["name"],
             "duration_ms": item["track"]["duration_ms"],
         }
+
 
         if save_play(**play) == True:
             counter += 1
@@ -69,53 +71,6 @@ def track_converter():
 
 
 track_converter()
-    
-
-def history_converter():
-    counter = 0
-    epskip_counter = 0
-
-    for file_path in json_streamingfiles:
-        with open(file_path, "r", encoding="utf-8") as file: # "r" is for read-mode (does it automatically but good practice), utf-8 to avoid crashing
-            data = json.load(file)
-
-        print(f"FIle: {file_path}, Data: {len(data)}")
-        dict_data = data[1]
-
-        if data[1]["spotify_track_uri"] == "null":
-            continue
-            epskip_counter += 1
-        else:
-            track_uri = dict_data["spotify_track_uri"]
-        track_id = track_uri.split(":")[-1]
-        track_name = dict_data["master_metadata_track_name"]
-        artist_name = dict_data["master_metadata_album_artist_name"]
-        album_name = dict_data["master_metadata_album_album_name"]
-        ms_played = dict_data["ms_played"]
-        played_at = dict_data["ts"]
-        duration_ms = None
-
-        export_play = {
-            "played_at": played_at,
-            "track_id": track_id,
-            "track_name": track_name,
-            "artist_name": artist_name,
-            "album_name": album_name,
-            "duration_ms": None,
-            "ms_played": ms_played,
-        }
-        if save_play(**export_play) == True:
-            counter += 1
-        else:
-            continue
-        
-    print(f"Saved {counter} new tracks, skipped {epskip_counter} episodes.")
-
-
- 
-
-history_converter()
-    
 
 
 
