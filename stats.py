@@ -53,6 +53,23 @@ def total_minutes(year):
         result = cursor.fetchone()[0] # [0] to grab the number
         return int(result or 0)
 
+
+def artists_plays(year, month):
+    with get_connection() as conn:
+        cursor = conn.execute(
+            f"""
+                SELECT artist_name, COUNT(*) AS plays
+                FROM plays
+                WHERE played_at >= ? AND played_at < ?
+                AND {GENUINE_LISTEN}
+                GROUP BY artist_name
+                ORDER BY plays DESC
+                """,
+                (month_range(year, month)),
+        )
+        return cursor.fetchall()
+
+
 # MINUTES MONTHLY
 def monthly_minutes(year):
     with get_connection() as conn:
@@ -73,6 +90,21 @@ def monthly_minutes(year):
 
 def year_range(year):
     return (f"{year}-01-01", f"{year + 1}-01-01")
+
+
+def month_range(year, month):
+    if (month + 1) == 13:
+        return (f"{year}-{month:02}-01", f"{year + 1}-{month - 11:02}-01")
+    else:
+        return (f"{year}-{month:02}-01", f"{year}-{month + 1:02}-01")
+
+
+def previous_month(year, month):
+    if (month - 1) == 0:
+        return year - 1, month + 11
+    else:
+        return year, month - 1
+
 
 # daily average = minutes so far divided by days passed
 # projection = daily average x total days in year
@@ -96,16 +128,37 @@ def eoy_projection(year):
 
     print(f"\nWith {days_passed} days passed this year and {(minutes_so_far):,} minutes accumulated, you've been averaging {daily_avg_hours:.2f} hours ({(rounded_daily_mins):,} mins) so far!")
     print(f"You're projected to end the year of {year} with {(rounded_projected):,} minutes played!\n")
+
+
+def artist_trends(year, month):
+    lastyear, lastmonth = previous_month(year, month)
+    
+    this_month = dict(artists_plays(year, month))
+    last_month = dict(artists_plays(year, month=lastmonth))
+
+    all_artists = set(this_month | last_month)
+    trends = []
+    for artist in all_artists:
+        current_plays = this_month.get(artist, 0)
+        prev_plays = last_month.get(artist, 0)
+        change = current_plays - prev_plays
+        trends.append((artist, prev_plays, current_plays, change))
+
+    result = sorted(trends, key=lambda item: item[3], reverse=True) # to put biggest increase in plays first to biggest decrease last
+    return result
+
+    
+
     
 
 
 
-
-
+# main S
 if __name__ == "__main__":
-    year = 2026
+    year = date.today().year
+    month = date.today().month 
 
-    print(f"Your {year} so far\n")
+    print(f"\nYour {year} so far\n")
 
     print("Top artists:")
     for i, (artist, plays) in enumerate(top_artists(year), start=1):
@@ -115,19 +168,29 @@ if __name__ == "__main__":
     for i, (track, artist, plays) in enumerate(top_tracks(year), start=1):
         print(f"{i:2}. {track} by {artist} ({plays} plays)")
 
-    print(f"\nMinutes listened: {total_minutes(year):,}")
+    print(f"\nMinutes listened: {total_minutes(year):,}") 
 
     print("===============================================================")
 
     print("Below you will find your minutes per month")
     total_monthly_mins = []
-    for (month, minutes) in (monthly_minutes(year)):
+    for (month_label, minutes) in (monthly_minutes(year)):
         total_monthly_mins.append(minutes)
-        print(f"{month}: {minutes} minutes")
+        print(f"{month_label}: {minutes} minutes")
     
     print(f"Combined minutes for all months: {sum(total_monthly_mins)}")
     print("===============================================================")
     eoy_projection(year)
+    results = artist_trends(year, month)
+    risers = results[:5]
+    fallers = results[-5:][::-1] # so the biggest drops are shown first
+    
+    # rest to do format into nice message 
+    for artist, lm, tm, change in risers:
+        print(f"{artist}: {lm} -> {tm} ({change:+})")
+    for artist, lm, tm, change in fallers:
+        print(f"{artist}: {lm} -> {tm} ({change:-})")
+
 
 
 
