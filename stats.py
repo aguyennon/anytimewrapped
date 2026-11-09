@@ -147,13 +147,8 @@ def artist_trends(year, month):
     result = sorted(trends, key=lambda item: item[3], reverse=True) # to put biggest increase in plays first to biggest decrease last
     return result
 
-    
-
-    
-
-
-
-# main S
+ 
+# main block
 if __name__ == "__main__":
     year = date.today().year
     month = date.today().month 
@@ -170,7 +165,7 @@ if __name__ == "__main__":
 
     print(f"\nMinutes listened: {total_minutes(year):,}") 
 
-    print("===============================================================")
+    print("================================================================")
 
     print("Below you will find your minutes per month")
     total_monthly_mins = []
@@ -179,17 +174,25 @@ if __name__ == "__main__":
         print(f"{month_label}: {minutes} minutes")
     
     print(f"Combined minutes for all months: {sum(total_monthly_mins)}")
-    print("===============================================================")
+    print("================================================================")
     eoy_projection(year)
     results = artist_trends(year, month)
     risers = results[:5]
     fallers = results[-5:][::-1] # so the biggest drops are shown first
     
+    print("================================================================")
     # rest to do format into nice message 
+    print("Below you will find your top 5 risers!")
+    print("**Risers is the term for songs that increased in plays this month the most compared to the last!**\n")
     for artist, lm, tm, change in risers:
         print(f"{artist}: {lm} -> {tm} ({change:+})")
+    print("\n================================================================")
+    print("\nBelow you will find your top 5 fallers!")
+    print("**Fallers is the term for songs that decreased in plays the most this month compared to the last!**\n")
     for artist, lm, tm, change in fallers:
         print(f"{artist}: {lm} -> {tm} ({change:-})")
+        
+    
 
 
 
