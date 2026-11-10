@@ -53,31 +53,6 @@ try:
     # ask spotify for recent plays (50 since its the max allowed)
     results = sp.current_user_recently_played(limit=50)
 
-    # - TO CHECK THE SONGS IN DETAIL BELOW - (to delete eventually probably)
-
-    # response is a dict (list of plays is under "items")
-    # enumerate start 1 to have a counter beside each item for numbering
-    for i, item in enumerate(results["items"], start=1): # get into the nested list in dict
-        track = item["track"] # get into the song details
-        links = track["external_urls"] # get into the urls
-        track_id = track["id"] # to get track id (since thats unique, unlike song names)
-        track_name = track["name"] # get track name instead of calling track value each time
-        album_name = track["album"]["name"] # to get album name
-        is_album = track["album"]["album_type"] 
-        artist_name = track["artists"][0]["name"] # take first artist (since songs can have more than 1)
-        played_at = item["played_at"] # time played at (currently utc)
-        song_link = links["spotify"] # link to the song
-
-
-        # check if its a single, if it is customize the print message  
-        if is_album == 'single':
-            print(f"{i:2}. {track_name} (ID: {track_id}) ({is_album.title()}) - {artist_name} ({played_at})\nLink to song: {song_link}")
-        else:
-            print(f"{i:2}. {track_name} (ID: {track_id}) - {artist_name} (Album: {album_name}) ({played_at})\nLink to song: {song_link}")
-
-        print("===============================================================================")
-
-    
     track_converter()
 
 except Exception as e:

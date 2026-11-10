@@ -130,7 +130,7 @@ def eoy_projection(year):
     print(f"You're projected to end the year of {year} with {(rounded_projected):,} minutes played!\n")
 
 
-def artist_trends(year, month):
+def artist_trends(year, month, minimum_plays=10):
     lastyear, lastmonth = previous_month(year, month)
     
     this_month = dict(artists_plays(year, month))
@@ -142,7 +142,11 @@ def artist_trends(year, month):
         current_plays = this_month.get(artist, 0)
         prev_plays = last_month.get(artist, 0)
         change = current_plays - prev_plays
-        trends.append((artist, prev_plays, current_plays, change))
+        combined_plays = prev_plays + current_plays
+        if combined_plays < minimum_plays: # skip if the combined plays are of less than 10
+            continue
+        else:
+            trends.append((artist, prev_plays, current_plays, change))
 
     result = sorted(trends, key=lambda item: item[3], reverse=True) # to put biggest increase in plays first to biggest decrease last
     return result
@@ -185,12 +189,12 @@ if __name__ == "__main__":
     print("Below you will find your top 5 risers!")
     print("**Risers is the term for songs that increased in plays this month the most compared to the last!**\n")
     for artist, lm, tm, change in risers:
-        print(f"{artist}: {lm} -> {tm} ({change:+})")
+        print(f"{artist}: {lm} plays -> {tm} plays ({change:+})")
     print("\n================================================================")
     print("\nBelow you will find your top 5 fallers!")
     print("**Fallers is the term for songs that decreased in plays the most this month compared to the last!**\n")
     for artist, lm, tm, change in fallers:
-        print(f"{artist}: {lm} -> {tm} ({change:-})")
+        print(f"{artist}: {lm} plays -> {tm} plays ({change:-})")
         
     
 
