@@ -5,14 +5,10 @@ from db import init_db, save_play, save_many_plays
 import glob
 import json
 from datetime import datetime
+from spotify_client import sp
 
-load_dotenv() # loads it
 init_db() # loads it
 
-
-# scope is a permission you're asking from user
-# means: read listening history (request the least access needed)
-SCOPE = "user-read-recently-played"
 
 def track_converter():
     counter = 0
@@ -46,10 +42,6 @@ def track_converter():
 
 
 try:
-    # creating spotify client, opens browser on first run
-    # then reuses saved token for login
-    sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=SCOPE))
-
     # ask spotify for recent plays (50 since its the max allowed)
     results = sp.current_user_recently_played(limit=50)
 
