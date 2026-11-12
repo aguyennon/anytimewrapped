@@ -105,51 +105,42 @@ def backup_playlist(playlist_id):
 
 def preview_removal(playlist_id, limit=5, min_age_days=30):
     candidates = least_played(playlist_id, limit=5, min_age_days=30)
+    
     print("\nThe following 5 songs would be removed:")
     if not candidates:
         print("No songs old enough to include yet.")
     else:
         for i, (t_id, track, artist, plays, da) in enumerate(candidates, start=1): # need to make helper function for this and least_plays in main block
             print(f"{i:2}. {track} (ID: {t_id}) by {artist} ({plays} plays, added {da[:10]})")
-    
-    confirmation = input("Remove these 5 songs? (y/n) ")
-    cleaned_answer = confirmation.lower().strip()
-    if cleaned_answer == "y":
-        print("Going ahead with the deletion...")
-    else:
-        print("Cancelled deletion.")
 
     return candidates
 
 
 def remove_tracks(playlist_id, track_ids):
     uris = [f"spotify:track:{track_id}" for track_id in track_ids]
-    for uri in uris(range(0, len(uris), 100)): # spotify's item request limit is 100
-        sp.playlist_remove_all_occurrences_of_items(playlist_id, uri)
+    for i in range(0, len(uris), 100): # spotify's item request limit is 100
+        sp.playlist_remove_all_occurrences_of_items(playlist_id, uris[i:i + 100]) # in chunks of 100
 
 
 def rejuvenate(playlist_id, limit=5, min_age_days=30):
-    preview = preview(playlist_id, limit=5, min_age_days=30)
-    remove = remove_tracks(playlist_id, track_ids)
+    preview = preview_removal(playlist_id, limit=5, min_age_days=30)
+    backup_path = backup_playlist(playlist_id)
+    tracks_to_remove_by_id = [item[0] for item in preview] # to grab id
 
     if not preview:
         print("No preview to show at this time.")
-        break
-    elif not "y":
-        break
-    elif "y":
-        
 
+    confirmation = input("Remove these 5 songs? (y/n) ")
+    cleaned_answer = confirmation.lower().strip()
 
-
-
-        
-
-
-
-    
-
-
+    if cleaned_answer == "y":
+        print("Going ahead with the deletion...")
+        remove_tracks(playlist_id, tracks_to_remove_by_id)
+        print(f"{limit} songs were successfully removed.")
+        print(f"Backup was saved at: {backup_path}")
+    else:
+        print("Cancelled deletion.")
+        return
         
 
 
@@ -168,7 +159,8 @@ if __name__ == "__main__":
             # sn -> song name
             # an -> artist name
 
-    preview_removal(playlist_id, limit=5, min_age_days=30)
+    
+    rejuvenate(playlist_id, limit=5, min_age_days=30) # check at a later time to turn limit into user input and showing the options based off of that. + songs to spare/candidates to keep
     
     
 
