@@ -5,4 +5,5 @@ __pycache__/
 my_spotify_data/
 *.db
 *.log
-test_script.py
+test_script.py 
+backups/

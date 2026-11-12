@@ -2,10 +2,13 @@ from spotify_client import sp
 from db import get_connection
 from stats import GENUINE_LISTEN
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+import json
 
 
 # will be working with playlist -> 'solo' from my spotify
 playlist_id = "131UctSm8vw8jdfbRg9A0Y"
+
 
 def get_playlist_tracks(playlist_id):
     saved_tracks = [] # to save tracks
@@ -81,22 +84,100 @@ def least_played(playlist_id, limit=10, min_age_days=30):
         if song["date_added"] > formatted_cutoff:
             continue
         else:
-            results_tuple = (song["track_name"], song["main_artist"], counts.get(song["track_id"], 0), song["date_added"]) # name, artist, plays, added_at
+            results_tuple = (song["track_id"], song["track_name"], song["main_artist"], counts.get(song["track_id"], 0), song["date_added"]) # name, artist, plays, added_at
             results.append(results_tuple)
     
     least_plays = sorted(results, key=lambda item: item [2], reverse=False) # to sort least plays first
     return least_plays[:limit] # show the 10 tracks with the least plays
 
 
+def backup_playlist(playlist_id):
+    total_songs = get_playlist_tracks(playlist_id)
+
+    # for backups (testing on dummy playlist)
+    file_path = Path("backups/131UctSm8vw8jdfbRg9A0Y_2026-11-12.json")
+    file_path.parent.mkdir(exist_ok=True, parents=True) 
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(total_songs, f, indent=2) # indent so the file is readable easily
+
+    return file_path
+
+
+def preview_removal(playlist_id, limit=5, min_age_days=30):
+    candidates = least_played(playlist_id, limit=5, min_age_days=30)
+    print("\nThe following 5 songs would be removed:")
+    if not candidates:
+        print("No songs old enough to include yet.")
+    else:
+        for i, (t_id, track, artist, plays, da) in enumerate(candidates, start=1): # need to make helper function for this and least_plays in main block
+            print(f"{i:2}. {track} (ID: {t_id}) by {artist} ({plays} plays, added {da[:10]})")
+    
+    confirmation = input("Remove these 5 songs? (y/n) ")
+    cleaned_answer = confirmation.lower().strip()
+    if cleaned_answer == "y":
+        print("Going ahead with the deletion...")
+    else:
+        print("Cancelled deletion.")
+
+    return candidates
+
+
+def remove_tracks(playlist_id, track_ids):
+    uris = [f"spotify:track:{track_id}" for track_id in track_ids]
+    for uri in uris(range(0, len(uris), 100)): # spotify's item request limit is 100
+        sp.playlist_remove_all_occurrences_of_items(playlist_id, uri)
+
+
+def rejuvenate(playlist_id, limit=5, min_age_days=30):
+    preview = preview(playlist_id, limit=5, min_age_days=30)
+    remove = remove_tracks(playlist_id, track_ids)
+
+    if not preview:
+        print("No preview to show at this time.")
+        break
+    elif not "y":
+        break
+    elif "y":
+        
+
+
+
+
+        
+
+
+
+    
+
+
+        
+
+
+
+# main block for the file
 if __name__ == "__main__":
     chosen_playlist ="131UctSm8vw8jdfbRg9A0Y"
     result = least_played(playlist_id=chosen_playlist, limit=10, min_age_days=30)
-    if result is None:
+    if not result:
         print("No songs old enough to include yet.")
     else:
         print("\nLeast played songs in this playlist: ")
-        for i, (sn, an, track_plays, added_date) in enumerate(result, start=1):
-            print(f"\t{i:2}. {sn} by {an} ({track_plays} plays, added {added_date[:10]})")
+        for i, (tid, sn, an, track_plays, added_date) in enumerate(result, start=1): 
+            print(f"\t{i:2}. ({tid}) {sn} by {an} ({track_plays} plays, added {added_date[:10]})")
+            # tid -> track id
+            # sn -> song name
+            # an -> artist name
+
+    preview_removal(playlist_id, limit=5, min_age_days=30)
+    
+    
+
+    
+
+
+
+
+
 
 
     
