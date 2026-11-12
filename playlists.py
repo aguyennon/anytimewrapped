@@ -110,10 +110,19 @@ def preview_removal(playlist_id, limit=5, min_age_days=30):
     if not candidates:
         print("No songs old enough to include yet.")
     else:
-        for i, (t_id, track, artist, plays, da) in enumerate(candidates, start=1): # need to make helper function for this and least_plays in main block
-            print(f"{i:2}. {track} (ID: {t_id}) by {artist} ({plays} plays, added {da[:10]})")
+        _displayhelper(playlist_id, limit=10, min_age_days=30)
 
     return candidates
+
+
+def _displayhelper(playlist_id, limit=10, min_age_days=30): # helper for preview_normal and least_plays (main block)
+    play = least_played(playlist_id, limit=10, min_age_days=30)
+    for i, (t_id, sn, an, track_plays, added_date) in enumerate(play, start=1): 
+        print(f"\t{i:2}. (ID: {t_id}) {sn} by {an} ({track_plays} plays, added {added_date[:10]})")
+        # tid -> track id
+        # sn -> song name
+        # an -> artist name
+    
 
 
 def remove_tracks(playlist_id, track_ids):
@@ -153,14 +162,12 @@ if __name__ == "__main__":
         print("No songs old enough to include yet.")
     else:
         print("\nLeast played songs in this playlist: ")
-        for i, (tid, sn, an, track_plays, added_date) in enumerate(result, start=1): 
-            print(f"\t{i:2}. ({tid}) {sn} by {an} ({track_plays} plays, added {added_date[:10]})")
-            # tid -> track id
-            # sn -> song name
-            # an -> artist name
+        _displayhelper(playlist_id, limit=10, min_age_days=30)
 
-    
-    rejuvenate(playlist_id, limit=5, min_age_days=30) # check at a later time to turn limit into user input and showing the options based off of that. + songs to spare/candidates to keep
+
+    #preview_removal(playlist_id, limit=5, min_age_days=30)
+    #_displayhelper(playlist_id, limit=10, min_age_days=30)
+    #rejuvenate(playlist_id, limit=5, min_age_days=30) # check at a later time to turn limit into user input and showing the options based off of that. + songs to spare/candidates to keep
     
     
 
