@@ -6,8 +6,8 @@ from pathlib import Path
 import json
 
 
-# will be working with playlist -> 'solo' from my spotify
-playlist_id = "131UctSm8vw8jdfbRg9A0Y"
+# will be working with playlist -> 'fog' from my spotify
+playlist_id = "64Ew5Gxdump7PzwinzQaj1"
 
 
 def get_playlist_tracks(playlist_id):
@@ -65,7 +65,7 @@ def play_counts(track_ids):
         return results
 
 
-def least_played(playlist_id, limit=10, min_age_days=30):
+def least_played(playlist_id, limit=None, min_age_days=30):
     collected_ids = []
 
     time_in_utc = datetime.now(timezone.utc) # since added_at is stored in utc
@@ -103,20 +103,20 @@ def backup_playlist(playlist_id):
     return file_path
 
 
-def preview_removal(playlist_id, limit=5, min_age_days=30):
-    candidates = least_played(playlist_id, limit=5, min_age_days=30)
+def preview_removal(playlist_id, limit=None, min_age_days=30):
+    candidates = least_played(playlist_id, limit, min_age_days=30)
     
-    print("\nThe following 5 songs would be removed:")
+    print(f"\nThe following {limit} songs would be removed:")
     if not candidates:
         print("No songs old enough to include yet.")
     else:
-        _displayhelper(playlist_id, limit=10, min_age_days=30)
+        _displayhelper(playlist_id, limit, min_age_days=30)
 
     return candidates
 
 
-def _displayhelper(playlist_id, limit=10, min_age_days=30): # helper for preview_normal and least_plays (main block)
-    play = least_played(playlist_id, limit=10, min_age_days=30)
+def _displayhelper(playlist_id, limit=None, min_age_days=30): # helper for preview_normal and least_plays (main block)
+    play = least_played(playlist_id, limit, min_age_days=30)
     for i, (t_id, sn, an, track_plays, added_date) in enumerate(play, start=1): 
         print(f"\t{i:2}. (ID: {t_id}) {sn} by {an} ({track_plays} plays, added {added_date[:10]})")
         # tid -> track id
@@ -131,15 +131,22 @@ def remove_tracks(playlist_id, track_ids):
         sp.playlist_remove_all_occurrences_of_items(playlist_id, uris[i:i + 100]) # in chunks of 100
 
 
-def rejuvenate(playlist_id, limit=5, min_age_days=30):
-    preview = preview_removal(playlist_id, limit=5, min_age_days=30)
+def _set_limit():
+    limit = int(input("Enter the amount of songs you would like to choose from to delete (1-10): "))
+
+    return limit
+    
+
+def rejuvenate(playlist_id, limit=None, min_age_days=30):
+    preview = preview_removal(playlist_id, limit, min_age_days=30)
     backup_path = backup_playlist(playlist_id)
+
     tracks_to_remove_by_id = [item[0] for item in preview] # to grab id
 
     if not preview:
         print("No preview to show at this time.")
 
-    confirmation = input("Remove these 5 songs? (y/n) ")
+    confirmation = input(f"Remove these {limit} songs? (y/n) ") # Asks three times before this, needs to delete 2
     cleaned_answer = confirmation.lower().strip()
 
     if cleaned_answer == "y":
@@ -153,21 +160,21 @@ def rejuvenate(playlist_id, limit=5, min_age_days=30):
         
 
 
-
 # main block for the file
 if __name__ == "__main__":
-    chosen_playlist ="131UctSm8vw8jdfbRg9A0Y"
-    result = least_played(playlist_id=chosen_playlist, limit=10, min_age_days=30)
-    if not result:
-        print("No songs old enough to include yet.")
-    else:
-        print("\nLeast played songs in this playlist: ")
-        _displayhelper(playlist_id, limit=10, min_age_days=30)
+    '''
+        chosen_playlist ="131UctSm8vw8jdfbRg9A0Y"
+        limit = _set_limit()
+        result = least_played(playlist_id=chosen_playlist, limit=limit, min_age_days=30)
+        if not result:
+            print("No songs old enough to include yet.")
+        else:
+            print("\nLeast played songs in this playlist: ")
+            _displayhelper(playlist_id, limit=limit, min_age_days=30)
+    '''
 
-
-    #preview_removal(playlist_id, limit=5, min_age_days=30)
-    #_displayhelper(playlist_id, limit=10, min_age_days=30)
-    #rejuvenate(playlist_id, limit=5, min_age_days=30) # check at a later time to turn limit into user input and showing the options based off of that. + songs to spare/candidates to keep
+    limit = _set_limit()
+    rejuvenate(playlist_id, limit=limit, min_age_days=30) # check at a later time to show songs to spare/candidates to keep (would you like to keep any of these selections?)
     
     
 
