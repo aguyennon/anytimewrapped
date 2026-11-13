@@ -106,10 +106,10 @@ def backup_playlist(playlist_id):
 def preview_removal(playlist_id, limit=None, min_age_days=30):
     candidates = least_played(playlist_id, limit, min_age_days=30)
     
-    print(f"\nThe following {limit} songs would be removed:")
     if not candidates:
         print("No songs old enough to include yet.")
     else:
+        print(f"\nThe following {limit} songs would be removed:")
         _displayhelper(playlist_id, limit, min_age_days=30)
 
     return candidates
@@ -145,18 +145,18 @@ def rejuvenate(playlist_id, limit=None, min_age_days=30):
 
     if not preview:
         print("No preview to show at this time.")
-
-    confirmation = input(f"Remove these {limit} songs? (y/n) ") # Asks three times before this, needs to delete 2
-    cleaned_answer = confirmation.lower().strip()
-
-    if cleaned_answer == "y":
-        print("Going ahead with the deletion...")
-        remove_tracks(playlist_id, tracks_to_remove_by_id)
-        print(f"{limit} songs were successfully removed.")
-        print(f"Backup was saved at: {backup_path}")
     else:
-        print("Cancelled deletion.")
-        return
+        confirmation = input(f"Remove these {limit} songs? (y/n) ") # Asks three times before this, needs to delete 2
+        cleaned_answer = confirmation.lower().strip()
+
+        if cleaned_answer == "y":
+            print("Going ahead with the deletion...")
+            remove_tracks(playlist_id, tracks_to_remove_by_id)
+            print(f"{limit} songs were successfully removed.")
+            print(f"Backup was saved at: {backup_path}")
+        else:
+            print("Cancelled deletion.")
+            return
         
 
 
