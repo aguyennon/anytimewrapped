@@ -237,31 +237,12 @@ def rejuvenate(playlist_id, limit=None, min_age_days=30):
 
 # main block for the file
 if __name__ == "__main__":
-    '''
-        chosen_playlist ="131UctSm8vw8jdfbRg9A0Y"
-        result = least_played(playlist_id=chosen_playlist, limit=limit, min_age_days=30)
-        if not result:
-            print("No songs old enough to include yet.")
-        else:
-            print("\nLeast played songs in this playlist: ")
-            _displayhelper(playlist_id, limit=limit, min_age_days=30)
-    
 
-    while True:
-        start = ask_date("Enter start date (YYYY-MM-DD): ")
-        end = ask_date("Enter end date (YYYY-MM-DD): ")
-        end_date = datetime.strptime(end, "%Y-%m-%d")
-        start_date = datetime.strptime(start, "%Y-%m-%d")
-        if end_date + timedelta(days=1) < start_date + timedelta(days=1):
-            print("Start date has to be before the end date, try again.")
-        else:
-            print(f"Noted range! (From: {start} - To: {end})")
-            break
-    '''
+    # to make playlist -> playlist_from_top_tracks()
 
-    playlist_from_top_tracks()
-    limit = _set_limit()
-    rejuvenate(playlist_id, limit=limit, min_age_days=30) # check at a later time to show songs to spare/candidates to keep (would you like to keep any of these selections?)
+    # to delete elements of playlist ->
+    # limit = _set_limit()
+    # rejuvenate(playlist_id, limit=limit, min_age_days=30) # check at a later time to show songs to spare/candidates to keep (would you like to keep any of these selections?)
     
 
     
