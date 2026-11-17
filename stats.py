@@ -39,6 +39,23 @@ def top_tracks(year, limit=10):
         return cursor.fetchall()
 
 
+def top_tracks_between(start_date, end_date, limit=50):
+    with get_connection() as conn:
+        cursor = conn.execute(
+            f"""
+            SELECT track_id, track_name, artist_name, COUNT(*) AS plays  -- track_id first, needed to build URIs
+            FROM plays
+            WHERE played_at >= ? AND played_at < ?                       -- Your custom range
+            AND {GENUINE_LISTEN}
+            GROUP BY track_id
+            ORDER BY plays DESC
+            LIMIT ?
+            """,
+            (start_date, end_date, limit)
+        )
+        return cursor.fetchall()
+
+
 def total_minutes(year):
     with get_connection() as conn:
         cursor = conn.execute(
