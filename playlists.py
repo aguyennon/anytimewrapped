@@ -87,7 +87,7 @@ def least_played(playlist_id, limit=None, min_age_days=30):
             results_tuple = (song["track_id"], song["track_name"], song["main_artist"], counts.get(song["track_id"], 0), song["date_added"]) # name, artist, plays, added_at
             results.append(results_tuple)
     
-    least_plays = sorted(results, key=lambda item: item [2], reverse=False) # to sort least plays first
+    least_plays = sorted(results, key=lambda item: item [3], reverse=False) # to sort least plays first
     return least_plays[:limit] # show the 10 tracks with the least plays
 
 
@@ -95,7 +95,7 @@ def backup_playlist(playlist_id):
     total_songs = get_playlist_tracks(playlist_id)
 
     # for backups (testing on dummy playlist)
-    file_path = Path("backups/131UctSm8vw8jdfbRg9A0Y_2026-11-12.json")
+    file_path = Path(f"backups/{playlist_id}_{datetime.now().strftime('%Y-%m-%d %Hh%Mmin%Ss')}.json")
     file_path.parent.mkdir(exist_ok=True, parents=True) 
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(total_songs, f, indent=2) # indent so the file is readable easily
@@ -174,24 +174,27 @@ def playlist_from_top_tracks():
         start = ask_date("Enter start date (YYYY-MM-DD): ")
         end = ask_date("Enter end date (YYYY-MM-DD): ")
         end_date = datetime.strptime(end, "%Y-%m-%d")
+        end_plus_one = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")
         start_date = datetime.strptime(start, "%Y-%m-%d")
-        if end_date + timedelta(days=1) < start_date + timedelta(days=1):
+
+        if end_plus_one < start_date:
             print("Start date has to be before the end date, try again.")
         else:
             print(f"Noted range! (From: {start} - To: {end})")
             break
     
     addition_limit = int(input("Enter the amount of songs you would like to add to the playlist: "))
-    selected_top_tracks = top_tracks_between(start_date, end_date, limit=addition_limit)
+    selected_top_tracks = top_tracks_between(start, end_plus_one, limit=addition_limit) # pass text versions and not datetime
+    
+    if not selected_top_tracks:
+        print("No results found from set filters.")
+        return
+    else:
+        for i, (track_id, track, artist, plays) in enumerate(selected_top_tracks, start=1):
+            if selected_top_tracks is not None:
+                print(f"{i:2}. (ID: {track_id}) {track} by {artist} ({plays} plays)") 
 
-    for i, (track_id, track, artist, plays) in enumerate(selected_top_tracks, start=1):
-        if selected_top_tracks is not None:
-            print(f"{i:2}. (ID: {track_id}) {track} by {artist} ({plays} plays)") 
-        else:
-            print("No results found from set filters.")
-            return
-
-    name_title = f"Top 50 - {start} to {end}"
+    name_title = f"Top {addition_limit} - {start} to {end}"
     desc = "Made with AnytimeWrapped"
         
     
@@ -214,7 +217,6 @@ def _set_limit():
 
 def rejuvenate(playlist_id, limit=None, min_age_days=30):
     preview = preview_removal(playlist_id, limit, min_age_days=30)
-    backup_path = backup_playlist(playlist_id)
 
     tracks_to_remove_by_id = [item[0] for item in preview] # to grab id
 
@@ -225,6 +227,7 @@ def rejuvenate(playlist_id, limit=None, min_age_days=30):
         cleaned_answer = confirmation.lower().strip()
 
         if cleaned_answer == "y":
+            backup_path = backup_playlist(playlist_id)
             print("Going ahead with the deletion...")
             remove_tracks(playlist_id, tracks_to_remove_by_id)
             print(f"{limit} songs were successfully removed.")

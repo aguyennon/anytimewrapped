@@ -151,7 +151,7 @@ def artist_trends(year, month, minimum_plays=10):
     lastyear, lastmonth = previous_month(year, month)
     
     this_month = dict(artists_plays(year, month))
-    last_month = dict(artists_plays(year, month=lastmonth))
+    last_month = dict(artists_plays(year=lastyear, month=lastmonth))
 
     all_artists = set(this_month | last_month)
     trends = []
