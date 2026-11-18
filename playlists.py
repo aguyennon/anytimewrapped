@@ -184,8 +184,8 @@ def playlist_from_top_tracks():
             break
     
     addition_limit = int(input("Enter the amount of songs you would like to add to the playlist: "))
-    selected_top_tracks = top_tracks_between(start, end_plus_one, limit=addition_limit) # pass text versions and not datetime
-    
+    selected_top_tracks = top_tracks_between(_local_to_utc(start), _local_to_utc(end_plus_one), limit=addition_limit) # pass text versions and not datetime
+
     if not selected_top_tracks:
         print("No results found from set filters.")
         return
@@ -235,12 +235,12 @@ def rejuvenate(playlist_id, limit=None, min_age_days=30):
         else:
             print("Cancelled deletion.")
             return
-        
+       
 
 
 # main block for the file
 if __name__ == "__main__":
-
+    pass 
     # to make playlist -> playlist_from_top_tracks()
 
     # to delete elements of playlist ->

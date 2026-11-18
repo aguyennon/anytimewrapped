@@ -1,5 +1,5 @@
 from db import get_connection
-from datetime import date
+from datetime import date, timezone, datetime
 import calendar 
 
 GENUINE_LISTEN = "(ms_played IS NULL OR ms_played >= 30000)"
@@ -92,7 +92,7 @@ def monthly_minutes(year):
     with get_connection() as conn:
         cursor = conn.execute(
             f"""
-            SELECT substr(played_at, 1, 7) AS month,
+            SELECT strftime('%Y-%m', played_at, 'localtime') AS month, 
                 ROUND(SUM(COALESCE(ms_played, duration_ms)) / 60000.0) AS minutes
             FROM plays
             WHERE played_at >= ? AND played_at < ?
@@ -105,15 +105,20 @@ def monthly_minutes(year):
         return cursor.fetchall()
 
 
+def _local_to_utc(day): # helper for year and month ranges
+    local_midnight = datetime.strptime(day, "%Y-%m-%d").astimezone()
+    return local_midnight.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def year_range(year):
-    return (f"{year}-01-01", f"{year + 1}-01-01")
+    return (_local_to_utc(f"{year}-01-01"), _local_to_utc(f"{year + 1}-01-01"))
 
 
 def month_range(year, month):
     if (month + 1) == 13:
-        return (f"{year}-{month:02}-01", f"{year + 1}-{month - 11:02}-01")
+        return (_local_to_utc(f"{year}-{month:02}-01"), _local_to_utc(f"{year + 1}-{month - 11:02}-01"))
     else:
-        return (f"{year}-{month:02}-01", f"{year}-{month + 1:02}-01")
+        return (_local_to_utc(f"{year}-{month:02}-01"), _local_to_utc(f"{year}-{month + 1:02}-01"))
 
 
 def previous_month(year, month):
