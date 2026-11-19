@@ -3,6 +3,7 @@ import calendar
 import html
 from datetime import date, datetime, timedelta
 from pathlib import Path
+import requests
 
 import pandas as pd
 import streamlit as st
@@ -187,6 +188,16 @@ def playlist_id_from(text):
     if "playlist:" in text:
         text = text.split("playlist:")[1]
     return text.split("?")[0].strip("/")  # drops the ?si=... share tracking part
+
+
+def with_retry(action, *args, **kwargs):
+    try:
+        return action(*args, **kwargs)
+
+    except requests.exceptions.ConnectionError:
+        return action(*args, **kwargs)
+
+    
 
 
 def token_file():
@@ -420,8 +431,8 @@ if tab == TABS[0]:
 
         if st.button("Create playlist", type="primary", disabled=not rows):
             try:
-                new_id = create_playlist(preview["name"], "Made with AnytimeWrapped")
-                add_tracks(new_id, [r[0] for r in rows])  # r[0] is the track ID
+                new_id = with_retry(create_playlist, preview["name"], "Made with AnytimeWrapped")
+                with_retry(add_tracks, new_id, [r[0] for r in rows])
                 st.session_state["created"] = (preview["name"], len(rows), new_id)
                 st.session_state.pop("create_preview", None)
                 done = True
@@ -465,7 +476,7 @@ elif tab == TABS[1]:
                 problem = "Paste a playlist link first."
             else:
                 try:
-                    found = least_played(pid, limit=int(how_many), min_age_days=int(min_age))
+                    found = with_retry(least_played, pid, limit=int(how_many), min_age_days=int(min_age))
                     # nonce = a fresh number per search, used in the widget keys below,
                     # so ticks from an older search can never carry over to this one
                     st.session_state["removal"] = {
@@ -490,8 +501,8 @@ elif tab == TABS[1]:
             sure = st.checkbox(f"Yes, remove {len(to_remove)} songs from this playlist", key=f"sure_{nonce}")
             if st.button("Remove selected songs", type="primary", disabled=not (sure and to_remove)):
                 try:
-                    backup_path = backup_playlist(removal["pid"])  # backup first, same order as rejuvenate
-                    remove_tracks(removal["pid"], to_remove)
+                    backup_path = with_retry(backup_playlist, removal["pid"])
+                    with_retry(remove_tracks, removal["pid"], to_remove)
                     st.session_state["removed"] = (len(to_remove), str(backup_path))
                     st.session_state.pop("removal", None)
                     done = True
