@@ -26,7 +26,7 @@ View your data ->
   - See your top songs this year as well as their plays
   - See your biggest aritsts plays change of current month compared to the previous month whether the number is positive or negative.
 
-SQLite DB Browser used as database to store data.
+SQLite used as database to store data.
 Streamlit used to host 
 Spotipy used to use data from Spotify
 
