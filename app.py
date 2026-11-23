@@ -558,7 +558,7 @@ else:
     st.caption("Daily plays feature coming soon.")
 
     if period == "Yearly":
-        year = v2.selectbox("Year", years)
+        year = v2.selectbox("Year", years) # year dropdown since year uses it
         minutes = get_total_minutes(year)
         m1, m2, m3 = st.columns(3)
         m1.metric(f"Minutes listened in {year}", f"{minutes:,}")
@@ -587,7 +587,7 @@ else:
         trends = get_artist_trends(year, trend_month)
         trends_note = f"Plays per artist, {before_label} compared with {now_label}"
     elif period == "Monthly":
-        year = v2.selectbox("Year", years)
+        year = v2.selectbox("Year", years) # year dropdown since month uses it
         month = v3.selectbox(
             "Month",
             list(range(1, 13)),
