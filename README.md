@@ -27,7 +27,7 @@ View your data ->
   - See your biggest aritsts plays change of current month compared to the previous month whether the number is positive or negative.
 
 SQLite used as database to store data.
-Streamlit used to host 
+Streamlit used 
 Spotipy used to use data from Spotify
 
 Never finished project.
