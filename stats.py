@@ -1,5 +1,5 @@
 from db import get_connection
-from datetime import date, timezone, datetime
+from datetime import date, timezone, datetime, timedelta
 import calendar 
 
 GENUINE_LISTEN = "(ms_played IS NULL OR ms_played >= 30000)"
@@ -71,6 +71,21 @@ def total_minutes(year):
         return int(result or 0)
 
 
+def minutes_between(start, end):
+    with get_connection() as conn:
+        cursor = conn.execute(
+            f"""
+            SELECT ROUND(SUM(COALESCE(ms_played, duration_ms)) / 60000.0)
+            FROM plays
+            WHERE played_at >= ? AND played_at < ?
+                AND {GENUINE_LISTEN}
+            """,
+            (start, end)
+        )
+        result = cursor.fetchone()[0]
+        return int(result or 0)
+
+
 def artists_plays(year, month):
     with get_connection() as conn:
         cursor = conn.execute(
@@ -83,6 +98,22 @@ def artists_plays(year, month):
                 ORDER BY plays DESC
                 """,
                 (month_range(year, month)),
+        )
+        return cursor.fetchall()
+
+
+def artists_plays_between(start, end):
+    with get_connection() as conn:
+        cursor = conn.execute(
+            f"""
+            SELECT artist_name, COUNT(*) AS plays
+            FROM plays
+            WHERE played_at >= ? AND played_at < ?
+                AND {GENUINE_LISTEN}
+            GROUP BY artist_name
+            ORDER BY plays DESC
+            """,
+            (start, end)
         )
         return cursor.fetchall()
 
@@ -105,6 +136,23 @@ def monthly_minutes(year):
         return cursor.fetchall()
 
 
+def monthly_minutes(start, end):
+    with get_connection() as conn:
+        cursor = conn.execute(
+            f"""
+            SELECT strftime('%Y-%m-%d', played_at, 'localtime') AS day,
+            ROUND(SUM(COALESCE(ms_played, duration_ms)) / 60000.0) AS minutes
+            FROM plays
+            WHERE played_at >= ? AND played_at < ?
+                AND {GENUINE_LISTEN}
+            GROUP BY day
+            ORDER BY day
+            """,
+            (start, end)
+        )
+        return cursor.fetchall()
+
+
 def _local_to_utc(day): # helper for year and month ranges
     local_midnight = datetime.strptime(day, "%Y-%m-%d").astimezone()
     return local_midnight.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -119,6 +167,19 @@ def month_range(year, month):
         return (_local_to_utc(f"{year}-{month:02}-01"), _local_to_utc(f"{year + 1}-{month - 11:02}-01"))
     else:
         return (_local_to_utc(f"{year}-{month:02}-01"), _local_to_utc(f"{year}-{month + 1:02}-01"))
+
+
+def week_range(day):
+    todays_date = day.weekday()
+
+    monday = day - timedelta(days=todays_date) # since weekday() = days since monday
+    next_monday = monday + timedelta(days=7) # to find next monday
+
+    # needs converting to utc for _local_to_utc
+    monday_utc = monday.isoformat()
+    next_monday_utc = next_monday.isoformat()
+
+    return (_local_to_utc(monday_utc), _local_to_utc(next_monday_utc))
 
 
 def previous_month(year, month):
@@ -152,30 +213,47 @@ def eoy_projection(year):
     print(f"You're projected to end the year of {year} with {(rounded_projected):,} minutes played!\n")
 
 
+def compare_plays(current, previous, minimum_plays=10):
+    all_artists = set(current | previous)
+    trends = []
+    for artist in all_artists:
+        curr_period = current.get(artist, 0)
+        prev_period = previous.get(artist, 0)
+        change = curr_period - prev_period
+        combined_plays = prev_period + curr_period
+        if combined_plays < minimum_plays: # skip if the combined plays are of less than 10
+            continue
+        else:
+            trends.append((artist, prev_period, curr_period, change))
+
+    result = sorted(trends, key=lambda item: item[3], reverse=True) # to put biggest increase in plays first to biggest decrease last
+    return result
+
+
 def artist_trends(year, month, minimum_plays=10):
     lastyear, lastmonth = previous_month(year, month)
     
     this_month = dict(artists_plays(year, month))
     last_month = dict(artists_plays(year=lastyear, month=lastmonth))
 
-    all_artists = set(this_month | last_month)
-    trends = []
-    for artist in all_artists:
-        current_plays = this_month.get(artist, 0)
-        prev_plays = last_month.get(artist, 0)
-        change = current_plays - prev_plays
-        combined_plays = prev_plays + current_plays
-        if combined_plays < minimum_plays: # skip if the combined plays are of less than 10
-            continue
-        else:
-            trends.append((artist, prev_plays, current_plays, change))
+    return (compare_plays(this_month, last_month, minimum_plays=10))
 
-    result = sorted(trends, key=lambda item: item[3], reverse=True) # to put biggest increase in plays first to biggest decrease last
-    return result
 
- 
+def weekly_trends(day, minimum_plays=3):
+    this_week_range_result = week_range(day)
+    last_week_range_result = week_range(day - timedelta(days=7)) 
+
+    current_week_plays = dict(artists_plays_between(*this_week_range_result))
+    last_week_plays = dict(artists_plays_between(*last_week_range_result))
+
+    return compare_plays(current_week_plays, last_week_plays, minimum_plays)
+
+
+
 # main block
 if __name__ == "__main__":
+    print(weekly_trends(date.today() - timedelta(days=7)))
+    '''
     year = date.today().year
     month = date.today().month 
 
@@ -217,6 +295,7 @@ if __name__ == "__main__":
     print("**Fallers is the term for songs that decreased in plays the most this month compared to the last!**\n")
     for artist, lm, tm, change in fallers:
         print(f"{artist}: {lm} plays -> {tm} plays ({change:-})")
+    '''
         
     
 

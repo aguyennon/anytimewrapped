@@ -482,7 +482,7 @@ elif tab == TABS[1]:
                     st.session_state["removal"] = {
                         "pid": pid,
                         "cands": found,
-                        "covers": cover_urls([c[0] for c in found]),
+                        "covers": cover_urls([c[0] for c in found]), 
                         "nonce": datetime.now().timestamp(),
                     }
                 except Exception as e:
