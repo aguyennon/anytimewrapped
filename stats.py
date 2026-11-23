@@ -136,7 +136,7 @@ def monthly_minutes(year):
         return cursor.fetchall()
 
 
-def monthly_minutes(start, end):
+def daily_minutes(start, end):
     with get_connection() as conn:
         cursor = conn.execute(
             f"""
@@ -253,7 +253,6 @@ def weekly_trends(day, minimum_plays=3):
 # main block
 if __name__ == "__main__":
     print(weekly_trends(date.today() - timedelta(days=7)))
-    '''
     year = date.today().year
     month = date.today().month 
 
@@ -295,7 +294,7 @@ if __name__ == "__main__":
     print("**Fallers is the term for songs that decreased in plays the most this month compared to the last!**\n")
     for artist, lm, tm, change in fallers:
         print(f"{artist}: {lm} plays -> {tm} plays ({change:-})")
-    '''
+    
         
     
 

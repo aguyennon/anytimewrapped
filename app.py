@@ -22,6 +22,12 @@ from stats import (
     top_tracks_between,
     total_minutes,
     year_range,
+    week_range, 
+    artists_plays_between,
+    minutes_between,
+    daily_minutes,
+    weekly_trends
+
 )
 
 ASSETS = Path(__file__).parent / "assets"  # folder holding the two logo files
@@ -215,6 +221,10 @@ get_total_minutes = cache(total_minutes)
 get_monthly_minutes = cache(monthly_minutes)
 get_artists_plays = cache(artists_plays)
 get_artist_trends = cache(artist_trends)
+get_minutes_between = cache(minutes_between)
+get_daily_minutes = cache(daily_minutes)
+get_artists_between = cache(artists_plays_between)
+get_weekly_trends = cache(weekly_trends)
 
 
 @st.cache_data(ttl=300)
@@ -544,11 +554,11 @@ else:
     years = list(range(today.year, first_year - 1, -1))  # newest first
 
     v1, v2, v3 = st.columns(3)
-    period = v1.radio("Period", ["Yearly", "Monthly"], horizontal=True)
-    year = v2.selectbox("Year", years)
-    st.caption("Daily and weekly views are coming later.")
+    period = v1.radio("Period", ["Yearly", "Monthly", "Weekly"], horizontal=True)
+    st.caption("Daily plays feature coming soon.")
 
     if period == "Yearly":
+        year = v2.selectbox("Year", years)
         minutes = get_total_minutes(year)
         m1, m2, m3 = st.columns(3)
         m1.metric(f"Minutes listened in {year}", f"{minutes:,}")
@@ -572,7 +582,12 @@ else:
         songs = get_tracks_between(*year_range(year), limit=10)
         trend_month = today.month if year == today.year else 12
         trends_title = "Where it's headed" if year == today.year else "How the year ended"
-    else:
+        before_label = calendar.month_abbr[previous_month(year, trend_month)[1]]
+        now_label = calendar.month_abbr[trend_month]
+        trends = get_artist_trends(year, trend_month)
+        trends_note = f"Plays per artist, {before_label} compared with {now_label}"
+    elif period == "Monthly":
+        year = v2.selectbox("Year", years)
         month = v3.selectbox(
             "Month",
             list(range(1, 13)),
@@ -594,10 +609,44 @@ else:
         songs = get_tracks_between(*month_range(year, month), limit=10)
         trend_month = month
         trends_title = "Where it's headed"
+        before_label = calendar.month_abbr[previous_month(year, trend_month)[1]]
+        now_label = calendar.month_abbr[trend_month]
+        trends = get_artist_trends(year, trend_month)
+        trends_note = f"Plays per artist, {before_label} compared with {now_label}"
+    else:
+        day = v3.date_input("Any day in the week", value=today)
+        start, end = week_range(day)  # UTC text for the queries
+        monday = day - timedelta(days=day.weekday())  # the same Monday, as a date, for the chart
 
-    # the two months being compared, as short names like Oct and Nov
-    before_label = calendar.month_abbr[previous_month(year, trend_month)[1]]
-    now_label = calendar.month_abbr[trend_month]
+        # a week still in progress is averaged over the days so far
+        if monday <= today < monday + timedelta(days=7):
+            days = today.weekday() + 1  # Monday is 0, so add 1 to count it
+        else:
+            days = 7
+
+        minutes = int(get_minutes_between(start, end))
+        m1, m2, m3 = st.columns(3)
+        m1.metric(f"Minutes, week of {monday:%b %d}", f"{minutes:,}")
+        m2.metric("Hours listened", f"{minutes / 60:,.1f}")
+        m3.metric("Daily average", f"{minutes / days / 60:.2f} h")
+
+        by_day = dict(get_daily_minutes(start, end))  # {"2026-11-16": 245.0, ...}
+        week = []
+        for i in range(7):
+            key = (monday + timedelta(days=i)).isoformat()  # same text format as the dict's keys
+            week.append((key, by_day.get(key, 0)))  # 0 for a day with no plays
+        label("Minutes per day")
+        st.bar_chart(pd.DataFrame(week, columns=["Day", "Minutes"]), x="Day", y="Minutes", color=GREEN)
+
+        artists = get_artists_between(start, end)[:10]
+        songs = get_tracks_between(start, end, limit=10)
+        trends = get_weekly_trends(day)
+        trends_title = "Where it's headed"
+        before_label = "Last week"
+        now_label = "This week"
+        trends_note = "Plays per artist, last week compared with this week"
+
+
 
     a, b, c = st.columns(3)
     with a:
@@ -607,6 +656,7 @@ else:
     with c:
         card(
             trends_title,
-            f'<div class="aw-sm" style="margin-bottom:6px">Plays per artist, {before_label} compared with {now_label}</div>'
-            + trends_html(get_artist_trends(year, trend_month), before_label, now_label),
+            f'<div class="aw-sm" style="margin-bottom:6px">{trends_note}</div>'
+            + trends_html(trends, before_label, now_label),
+
         )
